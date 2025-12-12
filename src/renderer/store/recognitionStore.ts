@@ -23,6 +23,7 @@ interface RecognitionState {
     // 识别状态
     status: RecognitionStatus
     result: RecognitionResult | null
+    isAborting: boolean
 
     // Actions
     setImage: (data: string | null, mimeType: string | null, fileName?: string | null) => void
@@ -36,6 +37,7 @@ interface RecognitionState {
     setCustomParams: (params: Array<{ id: string; key: string; value: string }>) => void
     loadSettings: () => Promise<void>
     recognize: () => Promise<RecognitionResult>
+    cancelRecognition: () => Promise<void>
     reset: () => void
     toggleProcessedImage: (show: boolean) => void
 }
@@ -59,6 +61,7 @@ export const useRecognitionStore = create<RecognitionState>((set, get) => ({
     customParams: [],
     status: 'idle',
     result: null,
+    isAborting: false,
 
     setImage: (data, mimeType, fileName = null) => {
         set({
@@ -208,15 +211,37 @@ export const useRecognitionStore = create<RecognitionState>((set, get) => ({
             return result
         } catch (error) {
             console.error('[Recognition Error]', error);
+            const errorMessage = (error as Error).message || String(error)
+
+            // Don't show error for cancellation
+            if (errorMessage.includes('取消')) {
+                set({ status: 'idle', result: null })
+                return { success: false, error: errorMessage }
+            }
+
             const result: RecognitionResult = {
                 success: false,
-                error: (error as Error).message || String(error)
+                error: errorMessage
             }
             set({ status: 'error', result })
             return result
         } finally {
             if (removeListener) {
                 removeListener()
+            }
+            set({ isAborting: false })
+        }
+    },
+
+    cancelRecognition: async () => {
+        const state = get()
+        if (state.status === 'uploading' || state.status === 'analyzing') {
+            set({ isAborting: true })
+            try {
+                await api.recognition.cancel()
+                console.log('[Recognition] Cancelled successfully')
+            } catch (error) {
+                console.error('[Recognition] Cancel failed:', error)
             }
         }
     },

@@ -103,6 +103,8 @@ export const api = {
     recognition: {
         recognize: (data: TauriRecognitionRequest): Promise<RecognitionResult> =>
             invoke('recognize', { data }),
+        cancel: (): Promise<void> =>
+            invoke('cancel_recognition'),
         onStreamChunk: async (callback: (content: string) => void) => {
             const unlisten = await listen<string>('recognition-stream', (event) => {
                 console.log('[API] Stream event received:', event);

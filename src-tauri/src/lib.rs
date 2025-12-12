@@ -7,6 +7,8 @@ mod services;
 mod utils;
 
 use tauri::Manager;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub fn run() {
     tauri::Builder::default()
@@ -26,6 +28,11 @@ pub fn run() {
             // Initialize database
             let app_data_dir = app.path().app_data_dir().expect("Failed to get app data dir");
             db::init_database(&app_data_dir).expect("Failed to initialize database");
+
+            // Initialize recognition state
+            let recognition_state = Arc::new(Mutex::new(commands::recognition::RecognitionState::new()));
+            app.manage(recognition_state);
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -61,6 +68,7 @@ pub fn run() {
             commands::settings::reset_settings,
             // Recognition commands
             commands::recognition::recognize,
+            commands::recognition::cancel_recognition,
             // Dialog commands
             commands::dialog::select_image,
             commands::dialog::save_file,

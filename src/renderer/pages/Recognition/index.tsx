@@ -26,7 +26,8 @@ import {
     ClockCircleOutlined,
     ThunderboltOutlined,
     PlusOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    StopOutlined
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { useConfigStore, useRecognitionStore } from '../../store'
@@ -51,6 +52,7 @@ export default function RecognitionPage() {
         stream,
         status,
         result,
+        isAborting,
         setConfigId,
         setPrompt,
         setTemperature,
@@ -58,6 +60,7 @@ export default function RecognitionPage() {
         setMaxTokens,
         setStream,
         recognize,
+        cancelRecognition,
         reset,
         loadSettings,
         customParams,
@@ -95,6 +98,10 @@ export default function RecognitionPage() {
         } catch (error) {
             message.error((error as Error).message)
         }
+    }
+
+    const handleCancel = async () => {
+        await cancelRecognition()
     }
 
     const handleCopy = async () => {
@@ -325,12 +332,13 @@ export default function RecognitionPage() {
                         <Button
                             type="primary"
                             size="large"
-                            icon={<PlayCircleOutlined />}
-                            onClick={handleRecognize}
-                            loading={isProcessing}
-                            disabled={!selectedConfigId}
+                            icon={isProcessing ? <StopOutlined /> : <PlayCircleOutlined />}
+                            onClick={isProcessing ? handleCancel : handleRecognize}
+                            loading={isAborting}
+                            disabled={!selectedConfigId || isAborting}
+                            danger={isProcessing}
                         >
-                            {isProcessing ? '识别中...' : '开始识别'}
+                            {isAborting ? '取消中...' : isProcessing ? '取消' : '开始识别'}
                         </Button>
                         <Button
                             size="large"
