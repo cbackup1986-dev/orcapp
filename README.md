@@ -1,6 +1,6 @@
 # 图片识别工具
 
-一款跨平台桌面应用，支持配置多个 LLM 模型供应商进行图片识别。
+一款使用 Tauri 2.0 构建的跨平台桌面应用，支持配置多个 LLM 模型供应商进行图片识别。
 
 ## 功能特点
 
@@ -10,13 +10,17 @@
 - 📝 **提示词模板**: 内置多种提示词模板，支持自定义保存
 - 📊 **历史记录**: 完整的识别历史，支持搜索、筛选、导出
 - ⌨️ **快捷操作**: 支持拖拽上传、Ctrl+V 粘贴图片
+- 🌙 **深色主题**: 精心设计的暗色界面
+- 📦 **轻量打包**: 基于 Tauri，安装包体积小巧
 
 ## 技术栈
 
-- **前端**: Electron + React + TypeScript + Ant Design
-- **数据库**: SQLite (better-sqlite3)
+- **框架**: [Tauri 2.0](https://tauri.app/) (Rust + WebView)
+- **前端**: React 18 + TypeScript + Ant Design 5
+- **后端**: Rust
+- **数据库**: SQLite (rusqlite)
 - **状态管理**: Zustand
-- **构建工具**: Vite + electron-builder
+- **构建工具**: Vite
 
 ## 开发指南
 
@@ -24,17 +28,12 @@
 
 - Node.js >= 18
 - npm >= 9
+- Rust >= 1.70 (安装: https://rustup.rs/)
 
 ### 安装依赖
 
 ```bash
 npm install
-```
-
-安装完成后会自动运行 `postinstall` 脚本重建原生模块。如果遇到问题，可以手动运行：
-
-```bash
-npm run rebuild
 ```
 
 ### 开发运行
@@ -43,33 +42,44 @@ npm run rebuild
 npm run dev
 ```
 
+这将同时启动 Vite 开发服务器和 Tauri 应用。
+
 ### 构建打包
 
 ```bash
-# Windows
-npm run build:win
-
-# macOS
-npm run build:mac
-
-# Linux
-npm run build:linux
+npm run build
 ```
+
+打包后的安装文件位于 `src-tauri/target/release/bundle/` 目录。
 
 ## 项目结构
 
 ```
-src/
-├── main/              # Electron 主进程
-│   ├── database/      # SQLite 数据库操作
-│   ├── services/      # LLM API 调用服务
-│   └── utils/         # 工具函数（加密、日志）
-├── renderer/          # React 渲染进程
-│   ├── components/    # UI 组件
-│   ├── pages/         # 页面
-│   ├── store/         # Zustand 状态管理
-│   └── styles/        # CSS 样式
-└── shared/            # 共享类型定义
+├── src/
+│   ├── renderer/          # React 前端应用
+│   │   ├── components/    # UI 组件
+│   │   ├── pages/         # 页面
+│   │   │   ├── Recognition/   # 图片识别
+│   │   │   ├── Config/        # 模型配置
+│   │   │   ├── History/       # 历史记录
+│   │   │   └── Settings/      # 应用设置
+│   │   ├── store/         # Zustand 状态管理
+│   │   ├── api/           # Tauri API 封装
+│   │   └── styles/        # CSS 样式
+│   └── shared/            # 共享类型定义
+│
+├── src-tauri/             # Tauri/Rust 后端
+│   ├── src/
+│   │   ├── commands/      # Tauri 命令
+│   │   ├── db/            # 数据库操作
+│   │   ├── services/      # LLM API 调用
+│   │   └── utils/         # 工具函数（加密等）
+│   ├── icons/             # 应用图标
+│   └── Cargo.toml         # Rust 依赖配置
+│
+├── index.html             # 入口 HTML
+├── vite.config.ts         # Vite 配置
+└── package.json           # npm 配置
 ```
 
 ## 使用说明
@@ -99,16 +109,14 @@ src/
 
 ## 数据存储
 
-应用数据存储在用户目录下：
+应用数据存储在用户数据目录下：
 
-- **Windows**: `%APPDATA%\image-recognition-app\.image-recognition\`
-- **macOS**: `~/Library/Application Support/image-recognition-app/.image-recognition/`
-- **Linux**: `~/.config/image-recognition-app/.image-recognition/`
+- **Windows**: `%APPDATA%\com.imagerecognition.app\`
+- **macOS**: `~/Library/Application Support/com.imagerecognition.app/`
+- **Linux**: `~/.config/com.imagerecognition.app/`
 
 包含：
-- `data.db` - SQLite 数据库
-- `logs/` - 日志文件
-- `.key` - 加密密钥（请勿删除）
+- `database/data.db` - SQLite 数据库
 
 ## 许可证
 
