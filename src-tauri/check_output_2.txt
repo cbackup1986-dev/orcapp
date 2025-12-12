@@ -1,0 +1,19 @@
+   Compiling image-recognition-app v1.0.0 (F:\code\ocrapp\src-tauri)
+error: this file contains an unclosed delimiter
+   --> src\services\openai.rs:290:3
+    |
+ 13 | ) -> RecognitionResult {
+    |                        - unclosed delimiter
+...
+ 32 |     let mut request_body = json!({
+    |                                 -- this delimiter might not be properly closed...
+    |                                 |
+    |                                 unclosed delimiter
+...
+210 | }
+    | - ...as it matches this but it has different indentation
+...
+290 | }
+    |  ^
+
+error: could not compile `image-recognition-app` (lib) due to 1 previous error

@@ -1,64 +1,38 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import electron from 'vite-plugin-electron'
-import renderer from 'vite-plugin-electron-renderer'
 import path from 'path'
 
 const sharedAlias = {
     '@': path.resolve(__dirname, 'src'),
-    '@main': path.resolve(__dirname, 'src/main'),
     '@renderer': path.resolve(__dirname, 'src/renderer'),
     '@shared': path.resolve(__dirname, 'src/shared')
 }
 
+// https://vitejs.dev/config/
 export default defineConfig({
-    plugins: [
-        react(),
-        electron([
-            {
-                entry: 'src/main/index.ts',
-                onstart(options) {
-                    options.startup()
-                },
-                vite: {
-                    build: {
-                        outDir: 'dist-electron/main',
-                        rollupOptions: {
-                            external: ['better-sqlite3', 'sharp']
-                        }
-                    },
-                    resolve: {
-                        alias: sharedAlias
-                    }
-                }
-            },
-            {
-                entry: 'src/main/preload.ts',
-                onstart(options) {
-                    options.reload()
-                },
-                vite: {
-                    build: {
-                        outDir: 'dist-electron/preload'
-                    },
-                    resolve: {
-                        alias: sharedAlias
-                    }
-                }
-            }
-        ]),
-        renderer()
-    ],
+    plugins: [react()],
     resolve: {
         alias: sharedAlias
     },
-    base: './',
+    // Vite options tailored for Tauri development
+    clearScreen: false,
+    server: {
+        port: 15174,
+        strictPort: true,
+        host: '127.0.0.1'
+    },
+    // to access the Tauri environment variables set by the CLI with information about the current target
+    envPrefix: ['VITE_', 'TAURI_'],
     build: {
+        // Tauri uses Chromium on Windows and WebKit on macOS and Linux
+        target: process.env.TAURI_PLATFORM === 'windows'
+            ? 'chrome105'
+            : 'safari13',
+        // don't minify for debug builds
+        minify: !process.env.TAURI_DEBUG ? 'esbuild' : false,
+        // produce sourcemaps for debug builds
+        sourcemap: !!process.env.TAURI_DEBUG,
         outDir: 'dist'
     },
-    server: {
-        host: '127.0.0.1',
-        port: 5173,
-        strictPort: true
-    }
+    base: './'
 })

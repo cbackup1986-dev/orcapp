@@ -28,6 +28,7 @@ import {
 import type { ColumnsType } from 'antd/es/table'
 import { useConfigStore } from '../../store'
 import type { ModelConfigListItem, ModelConfigInput } from '@shared/types'
+import { api } from '../../api'
 
 const providerOptions = [
     { value: 'openai', label: 'OpenAI' },
@@ -67,7 +68,7 @@ export default function ConfigPage() {
 
     const handleEdit = async (record: ModelConfigListItem) => {
         setEditingId(record.id)
-        const fullConfig = await window.electronAPI.config.getById(record.id)
+        const fullConfig = await api.config.getById(record.id)
         if (fullConfig) {
             form.setFieldsValue({
                 name: fullConfig.name,
@@ -123,7 +124,7 @@ export default function ConfigPage() {
         try {
             const values = await form.validateFields(['provider', 'apiUrl', 'apiKey', 'modelName'])
             setTestingForm(true)
-            const result = await window.electronAPI.config.testConnectionWithData(values)
+            const result = await api.config.testConnectionWithData(values)
             if (result.success) {
                 message.success(result.message)
             } else {
@@ -151,6 +152,7 @@ export default function ConfigPage() {
             title: '名称',
             dataIndex: 'name',
             key: 'name',
+            width: 150,
             render: (name, record) => (
                 <Space>
                     {name}
@@ -166,6 +168,7 @@ export default function ConfigPage() {
             title: '供应商',
             dataIndex: 'provider',
             key: 'provider',
+            width: 100,
             render: (provider: string) => (
                 <Tag color={providerColors[provider]}>
                     {providerOptions.find(p => p.value === provider)?.label || provider}
@@ -175,12 +178,15 @@ export default function ConfigPage() {
         {
             title: '模型',
             dataIndex: 'modelName',
-            key: 'modelName'
+            key: 'modelName',
+            width: 180
         },
         {
             title: 'API Key',
             dataIndex: 'apiKeyMasked',
             key: 'apiKeyMasked',
+            width: 200,
+            ellipsis: true,
             render: (key: string) => <code>{key}</code>
         },
         {

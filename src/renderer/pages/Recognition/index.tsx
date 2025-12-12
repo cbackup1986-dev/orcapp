@@ -33,6 +33,7 @@ import { useConfigStore, useRecognitionStore } from '../../store'
 import ImageUploader from '../../components/ImageUploader'
 import ResultViewer from '../../components/ResultViewer'
 import type { PromptTemplate } from '@shared/types'
+import { api } from '../../api'
 
 const { TextArea } = Input
 
@@ -64,7 +65,6 @@ export default function RecognitionPage() {
     } = useRecognitionStore()
 
     const [templates, setTemplates] = useState<PromptTemplate[]>([])
-    const [recentPrompts, setRecentPrompts] = useState<PromptTemplate[]>([])
     const [viewMode, setViewMode] = useState<ViewMode>('preview')
 
     useEffect(() => {
@@ -74,10 +74,8 @@ export default function RecognitionPage() {
     }, [fetchActiveConfigs])
 
     const loadTemplates = async () => {
-        const allTemplates = await window.electronAPI.template.getAll()
+        const allTemplates = await api.template.getAll()
         setTemplates(allTemplates)
-        const recent = await window.electronAPI.template.getRecent(10)
-        setRecentPrompts(recent)
     }
 
     // 如果没有选择配置，自动选择默认配置
@@ -101,7 +99,7 @@ export default function RecognitionPage() {
 
     const handleCopy = async () => {
         if (result?.content) {
-            await window.electronAPI.clipboard.writeText(result.content)
+            await api.clipboard.writeText(result.content)
             message.success('已复制到剪贴板')
         }
     }
@@ -110,7 +108,7 @@ export default function RecognitionPage() {
         if (!result?.content) return
 
         const extension = format === 'md' ? 'md' : 'txt'
-        const success = await window.electronAPI.dialog.saveFile({
+        const success = await api.dialog.saveFile({
             content: result.content,
             defaultName: `识别结果_${Date.now()}.${extension}`,
             filters: [
@@ -125,7 +123,7 @@ export default function RecognitionPage() {
 
     const handleTemplateSelect = (template: PromptTemplate) => {
         setPrompt(template.content)
-        window.electronAPI.template.incrementUse(template.id)
+        api.template.incrementUse(template.id)
     }
 
     const handleSaveTemplate = async () => {
@@ -135,7 +133,7 @@ export default function RecognitionPage() {
         }
         const name = window.prompt('请输入模板名称:')
         if (name) {
-            await window.electronAPI.template.create(name, prompt)
+            await api.template.create(name, prompt)
             await loadTemplates()
             message.success('模板保存成功')
         }
@@ -147,15 +145,6 @@ export default function RecognitionPage() {
             label: '模板库',
             children: templates.map(t => ({
                 key: `template-${t.id}`,
-                label: t.name,
-                onClick: () => handleTemplateSelect(t)
-            }))
-        },
-        {
-            key: 'recent',
-            label: '常用提示词',
-            children: recentPrompts.slice(0, 10).map(t => ({
-                key: `recent-${t.id}`,
                 label: t.name,
                 onClick: () => handleTemplateSelect(t)
             }))

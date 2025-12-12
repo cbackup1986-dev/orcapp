@@ -31,6 +31,7 @@ import remarkGfm from 'remark-gfm'
 import { useHistoryStore, useConfigStore, useRecognitionStore } from '../../store'
 import type { HistoryRecord } from '@shared/types'
 import { useNavigate } from 'react-router-dom'
+import { api } from '../../api'
 
 const { RangePicker } = DatePicker
 const { Text, Paragraph } = Typography
@@ -61,11 +62,19 @@ export default function HistoryPage() {
 
     const [selectedRowKeys, setSelectedRowKeys] = useState<number[]>([])
     const [drawerVisible, setDrawerVisible] = useState(false)
+    const [activeTab, setActiveTab] = useState('result')
 
     useEffect(() => {
         fetchRecords()
         fetchActiveConfigs()
     }, [fetchRecords, fetchActiveConfigs])
+
+    // Reset tab when drawer opens or record changes
+    useEffect(() => {
+        if (drawerVisible) {
+            setActiveTab('result')
+        }
+    }, [drawerVisible, selectedRecord?.id])
 
     const handleSearch = (keyword: string) => {
         setFilters({ keyword })
@@ -87,6 +96,9 @@ export default function HistoryPage() {
     }
 
     const handleView = (record: HistoryRecord) => {
+        console.log('[History] Viewing record:', record.id)
+        console.log('[History] Record prompt:', record.prompt?.substring(0, 100))
+        console.log('[History] Record result:', record.result?.substring(0, 100))
         selectRecord(record)
         setDrawerVisible(true)
     }
@@ -153,7 +165,7 @@ export default function HistoryPage() {
             extension = 'csv'
         }
 
-        const success = await window.electronAPI.dialog.saveFile({
+        const success = await api.dialog.saveFile({
             content,
             defaultName: `历史记录_${Date.now()}.${extension}`,
             filters: [{ name: format.toUpperCase(), extensions: [extension] }]
@@ -358,9 +370,14 @@ export default function HistoryPage() {
                         )
                         }
 
-                        < div style={{ flex: 1, overflow: 'hidden' }}>
+
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
                             <Tabs
-                                defaultActiveKey="result"
+                                key={selectedRecord.id}
+                                rootClassName="full-height-tabs"
+                                activeKey={activeTab}
+                                onChange={setActiveTab}
+                                destroyInactiveTabPane
                                 items={[
                                     {
                                         key: 'result',

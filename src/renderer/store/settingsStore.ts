@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { api } from '../api'
 import { AppSettings, DEFAULT_SETTINGS } from '@shared/types'
 
 interface SettingsState extends AppSettings {
@@ -21,7 +22,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     loadSettings: async () => {
         set({ loading: true })
         try {
-            const settings = await window.electronAPI.settings.getAll()
+            const settings = await api.settings.getAll()
             set({ ...settings, initialized: true })
         } catch (error) {
             console.error('Failed to load settings:', error)
@@ -33,7 +34,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     updateSettings: async (updates) => {
         set({ loading: true })
         try {
-            const newSettings = await window.electronAPI.settings.update(updates)
+            const newSettings = await api.settings.update(updates)
             set({ ...newSettings })
         } catch (error) {
             console.error('Failed to update settings:', error)
@@ -45,7 +46,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     resetSettings: async () => {
         set({ loading: true })
         try {
-            const defaults = await window.electronAPI.settings.reset()
+            const defaults = await api.settings.reset()
             set({ ...defaults })
         } catch (error) {
             console.error('Failed to reset settings:', error)

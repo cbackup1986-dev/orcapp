@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { api } from '../api'
 import type { RecognitionResult, RecognitionStatus } from '@shared/types'
 
 interface RecognitionState {
@@ -106,12 +107,12 @@ export const useRecognitionStore = create<RecognitionState>((set, get) => ({
 
     loadSettings: async () => {
         try {
-            const settings = await window.electronAPI.settings.getAll()
+            const settings = await api.settings.getAll()
             set({
-                temperature: settings.defaultTemperature ?? 0,
-                topP: settings.defaultTopP ?? 0.4,
-                maxTokens: settings.defaultMaxTokens ?? 2048,
-                stream: settings.defaultStream ?? true
+                temperature: (settings as any).defaultTemperature ?? 0,
+                topP: (settings as any).defaultTopP ?? 0.4,
+                maxTokens: (settings as any).defaultMaxTokens ?? 2048,
+                stream: (settings as any).defaultStream ?? true
             })
         } catch (e) {
             console.error('Failed to load settings:', e)
@@ -135,19 +136,23 @@ export const useRecognitionStore = create<RecognitionState>((set, get) => ({
 
         set({ status: 'uploading' })
 
-        // 监听流式输出
-        const removeListener = window.electronAPI.recognition.onStreamChunk((content: string) => {
-            console.log('[Stream] Received chunk:', content)
-            set((prev) => ({
-                result: {
-                    ...prev.result,
-                    success: true,
-                    content: (prev.result?.content || '') + content
-                }
-            }))
-        })
+        // Note: Streaming is not yet implemented in Tauri version
+        // For now, we'll use non-streaming mode
+        // Note: Streaming is implemented via Tauri events
+        let removeListener: (() => void) | undefined;
 
         try {
+            removeListener = await api.recognition.onStreamChunk((content: string) => {
+                console.log('[Stream] Received chunk:', content)
+                set((prev) => ({
+                    result: {
+                        ...prev.result,
+                        success: true,
+                        content: (prev.result?.content || '') + content
+                    }
+                }))
+            })
+
             set({
                 status: 'analyzing',
                 result: { success: true, content: '' }
@@ -165,7 +170,11 @@ export const useRecognitionStore = create<RecognitionState>((set, get) => ({
                 }
             })
 
-            const result = await window.electronAPI.recognition.recognize({
+            console.log('[Recognition] About to call recognize with:');
+            console.log('[Recognition] Prompt:', state.prompt);
+            console.log('[Recognition] Prompt length:', state.prompt.length);
+
+            const result = await api.recognition.recognize({
                 configId: state.selectedConfigId,
                 imageData: state.originalImageData || state.imageData, // 优先使用原图
                 imageMimeType: state.imageMimeType,
@@ -198,14 +207,17 @@ export const useRecognitionStore = create<RecognitionState>((set, get) => ({
 
             return result
         } catch (error) {
+            console.error('[Recognition Error]', error);
             const result: RecognitionResult = {
                 success: false,
-                error: (error as Error).message
+                error: (error as Error).message || String(error)
             }
             set({ status: 'error', result })
             return result
         } finally {
-            removeListener()
+            if (removeListener) {
+                removeListener()
+            }
         }
     },
 

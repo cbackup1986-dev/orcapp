@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import type { ModelConfigListItem, ModelConfig } from '@shared/types'
+import { api } from '../api'
+import type { ModelConfigListItem, ModelConfig, ModelConfigInput } from '@shared/types'
 
 interface ConfigState {
     configs: ModelConfigListItem[]
@@ -12,8 +13,8 @@ interface ConfigState {
     fetchConfigs: () => Promise<void>
     fetchActiveConfigs: () => Promise<void>
     fetchDefaultConfig: () => Promise<void>
-    createConfig: (input: Parameters<typeof window.electronAPI.config.create>[0]) => Promise<ModelConfigListItem>
-    updateConfig: (id: number, input: Parameters<typeof window.electronAPI.config.update>[1]) => Promise<ModelConfigListItem | null>
+    createConfig: (input: ModelConfigInput) => Promise<ModelConfigListItem>
+    updateConfig: (id: number, input: Partial<ModelConfigInput>) => Promise<ModelConfigListItem | null>
     deleteConfig: (id: number) => Promise<boolean>
     setDefaultConfig: (id: number) => Promise<boolean>
     testConnection: (id: number) => Promise<{ success: boolean; message: string }>
@@ -29,7 +30,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     fetchConfigs: async () => {
         set({ loading: true, error: null })
         try {
-            const configs = await window.electronAPI.config.getAll()
+            const configs = await api.config.getAll()
             set({ configs, loading: false })
         } catch (error) {
             set({ error: (error as Error).message, loading: false })
@@ -38,7 +39,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
     fetchActiveConfigs: async () => {
         try {
-            const activeConfigs = await window.electronAPI.config.getActive()
+            const activeConfigs = await api.config.getActive()
             set({ activeConfigs })
         } catch (error) {
             console.error('Failed to fetch active configs', error)
@@ -47,7 +48,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
 
     fetchDefaultConfig: async () => {
         try {
-            const defaultConfig = await window.electronAPI.config.getDefault()
+            const defaultConfig = await api.config.getDefault()
             set({ defaultConfig })
         } catch (error) {
             console.error('Failed to fetch default config', error)
@@ -55,14 +56,14 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     },
 
     createConfig: async (input) => {
-        const config = await window.electronAPI.config.create(input)
+        const config = await api.config.create(input)
         await get().fetchConfigs()
         await get().fetchActiveConfigs()
         return config
     },
 
     updateConfig: async (id, input) => {
-        const config = await window.electronAPI.config.update(id, input)
+        const config = await api.config.update(id, input)
         await get().fetchConfigs()
         await get().fetchActiveConfigs()
         if (get().defaultConfig?.id === id) {
@@ -72,7 +73,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     },
 
     deleteConfig: async (id) => {
-        const result = await window.electronAPI.config.delete(id)
+        const result = await api.config.delete(id)
         if (result) {
             await get().fetchConfigs()
             await get().fetchActiveConfigs()
@@ -81,7 +82,7 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     },
 
     setDefaultConfig: async (id) => {
-        const result = await window.electronAPI.config.setDefault(id)
+        const result = await api.config.setDefault(id)
         if (result) {
             await get().fetchConfigs()
             await get().fetchDefaultConfig()
@@ -90,6 +91,6 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
     },
 
     testConnection: async (id) => {
-        return await window.electronAPI.config.testConnection(id)
+        return await api.config.testConnection(id)
     }
 }))

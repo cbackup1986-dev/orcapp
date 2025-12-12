@@ -2,6 +2,7 @@ import { useCallback, useRef, useEffect } from 'react'
 import { InboxOutlined, DeleteOutlined } from '@ant-design/icons'
 import { Button, message, Radio, Image } from 'antd'
 import { useRecognitionStore } from '../../store'
+import { api } from '../../api'
 
 const SUPPORTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
@@ -86,10 +87,14 @@ export default function ImageUploader() {
                 }
             }
 
-            // 尝试从剪贴板读取图片（通过 Electron API）
-            const clipboardImage = await window.electronAPI.clipboard.readImage()
-            if (clipboardImage) {
-                setImage(clipboardImage.base64, clipboardImage.mimeType, 'clipboard-image.png')
+            // 尝试从剪贴板读取图片（通过 Electron API -> Tauri API）
+            try {
+                const clipboardImage = await api.clipboard.readImage()
+                if (clipboardImage) {
+                    setImage(clipboardImage.base64, clipboardImage.mimeType, 'clipboard-image.png')
+                }
+            } catch (error) {
+                console.error('Failed to read clipboard image:', error)
             }
         }
 
@@ -101,9 +106,13 @@ export default function ImageUploader() {
 
     // 选择文件对话框
     const handleSelectFile = async () => {
-        const result = await window.electronAPI.dialog.selectImage()
-        if (result) {
-            setImage(result.base64, result.mimeType, result.fileName)
+        try {
+            const result = await api.dialog.selectImage()
+            if (result) {
+                setImage(result.base64, result.mimeType, result.fileName)
+            }
+        } catch (error) {
+            console.error('Failed to select file:', error)
         }
     }
 

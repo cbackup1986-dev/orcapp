@@ -27,6 +27,7 @@ import type { ColumnsType } from 'antd/es/table'
 import type { AppSettings, PromptTemplate } from '@shared/types'
 
 import { useSettingsStore } from '../../store/settingsStore'
+import { api } from '../../api'
 
 const { Title, Text } = Typography
 
@@ -64,7 +65,7 @@ export default function SettingsPage() {
         setLoading(true)
         try {
             const [templatesData] = await Promise.all([
-                window.electronAPI.template.getAll()
+                api.template.getAll()
             ])
             setTemplates(templatesData)
             // Settings are loaded by App.tsx via store
@@ -99,17 +100,17 @@ export default function SettingsPage() {
     }
 
     const handleDeleteTemplate = async (id: number) => {
-        await window.electronAPI.template.delete(id)
+        await api.template.delete(id)
         message.success('模板已删除')
         loadData()
     }
 
     const handleSaveTemplate = async (values: { name: string; content: string; isDefault: boolean }) => {
         if (editingTemplate) {
-            await window.electronAPI.template.update(editingTemplate.id, values)
+            await api.template.update(editingTemplate.id, values)
             message.success('模板已更新')
         } else {
-            await window.electronAPI.template.create(values.name, values.content, values.isDefault)
+            await api.template.create(values.name, values.content, values.isDefault)
             message.success('模板已创建')
         }
         setTemplateModalVisible(false)

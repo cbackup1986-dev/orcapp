@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { api } from '../api'
 import type { HistoryRecord, HistoryQueryParams, HistoryPaginatedResult } from '@shared/types'
 
 interface HistoryState {
@@ -53,7 +54,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
                 ...params
             }
 
-            const result: HistoryPaginatedResult = await window.electronAPI.history.getRecords(queryParams)
+            const result: HistoryPaginatedResult = await api.history.getRecords(queryParams)
 
             set({
                 records: result.records,
@@ -90,7 +91,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     selectRecord: (record) => set({ selectedRecord: record }),
 
     deleteRecord: async (id) => {
-        const result = await window.electronAPI.history.delete(id)
+        const result = await api.history.delete(id)
         if (result) {
             await get().fetchRecords()
             if (get().selectedRecord?.id === id) {
@@ -101,7 +102,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     },
 
     deleteRecords: async (ids) => {
-        const result = await window.electronAPI.history.deleteMultiple(ids)
+        const result = await api.history.deleteMultiple(ids)
         if (result > 0) {
             await get().fetchRecords()
             if (get().selectedRecord && ids.includes(get().selectedRecord!.id)) {
@@ -112,7 +113,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     },
 
     clearAll: async () => {
-        const result = await window.electronAPI.history.clearAll()
+        const result = await api.history.clearAll()
         if (result > 0) {
             set({ records: [], total: 0, page: 1, selectedRecord: null })
         }
@@ -120,6 +121,6 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     },
 
     exportRecords: async () => {
-        return await window.electronAPI.history.export(get().filters)
+        return await api.history.export(get().filters)
     }
 }))

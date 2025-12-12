@@ -6,3 +6,6 @@ release
 .DS_Store
 *.local
 data
+
+# Tauri
+src-tauri/target
